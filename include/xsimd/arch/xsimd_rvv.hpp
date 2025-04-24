@@ -93,16 +93,16 @@
         template <class T>                                                \
         struct ctx                                                        \
         {                                                                 \
-            static constexpr size_t width = XSIMD_RVV_BITS;               \
+            static constexpr size_t width = XSIMD_RVV_WIDTH_M1;           \
             static constexpr size_t vl = width / (sizeof(T) * 8);         \
             using vec = rvv_reg_t<T, width>;                              \
             using uvec = rvv_reg_t<as_unsigned_relaxed_t<T>, width>;      \
             using svec = rvv_reg_t<as_signed_relaxed_t<T>, width>;        \
             using fvec = rvv_reg_t<as_float_relaxed_t<T>, width>;         \
             using bvec = rvv_bool_t<T, width>;                            \
-            using scalar_vec = rvv_reg_t<T, types::detail::rvv_width_m1>; \
-            using wide_vec = rvv_reg_t<T, width * 2>;                     \
-            using narrow_vec = rvv_reg_t<T, width / 2>;                   \
+            using scalar_vec = rvv_reg_t<T, XSIMD_RVV_WIDTH_M1>; \
+            using wide_vec = rvv_reg_t<T, XSIMD_RVV_WIDTH_M2>;            \
+            using narrow_vec = rvv_reg_t<T, XSIMD_RVV_WIDTH_MF2>;         \
             using type = SIGNATURE;                                       \
         };                                                                \
         template <class T>                                                \
@@ -293,9 +293,9 @@ namespace xsimd
         {
             template <class T>
             using rvv_fix_char_t = types::detail::rvv_fix_char_t<T>;
-            template <class T, size_t Width = XSIMD_RVV_BITS>
+            template <class T, size_t Width = XSIMD_RVV_WIDTH_M1>
             using rvv_reg_t = types::detail::rvv_reg_t<T, Width>;
-            template <class T, size_t Width = XSIMD_RVV_BITS>
+            template <class T, size_t Width = XSIMD_RVV_WIDTH_M1>
             using rvv_bool_t = types::detail::rvv_bool_t<T, Width>;
 
             template <size_t>
@@ -505,7 +505,7 @@ namespace xsimd
         // load_complex
         namespace detail
         {
-            template <class T, size_t W, typename std::enable_if<W >= types::detail::rvv_width_m1, int>::type = 0>
+            template <class T, size_t W, typename std::enable_if<W >= XSIMD_RVV_WIDTH_M1, int>::type = 0>
             XSIMD_INLINE rvv_reg_t<T, W * 2> rvvabut(rvv_reg_t<T, W> const& lo, rvv_reg_t<T, W> const& hi) noexcept
             {
                 typename rvv_reg_t<T, W * 2>::register_type tmp;
@@ -513,7 +513,7 @@ namespace xsimd
                 return __riscv_vset(tmp, 1, hi);
             }
 
-            template <class T, size_t W, typename std::enable_if<W<types::detail::rvv_width_m1, int>::type = 0> XSIMD_INLINE rvv_reg_t<T, W * 2> rvvabut(rvv_reg_t<T, W> const& lo, rvv_reg_t<T, W> const& hi) noexcept
+            template <class T, size_t W, typename std::enable_if<W<XSIMD_RVV_WIDTH_M1, int>::type = 0> XSIMD_INLINE rvv_reg_t<T, W * 2> rvvabut(rvv_reg_t<T, W> const& lo, rvv_reg_t<T, W> const& hi) noexcept
             {
                 return __riscv_vslideup(lo, hi, lo.vl, lo.vl * 2);
             }
@@ -521,24 +521,24 @@ namespace xsimd
             XSIMD_RVV_OVERLOAD(rvvget_lo_, (__riscv_vget_ XSIMD_RVV_TSM), _DROP_1ST_CUSTOM_ARGS_NOVL, vec(T, wide_vec), args..., 0)
             XSIMD_RVV_OVERLOAD(rvvget_hi_, (__riscv_vget_ XSIMD_RVV_TSM), _DROP_1ST_CUSTOM_ARGS_NOVL, vec(T, wide_vec), args..., 1)
 
-            template <class T, size_t W, typename std::enable_if<W >= types::detail::rvv_width_m1, int>::type = 0>
+            template <class T, size_t W, typename std::enable_if<W >= XSIMD_RVV_WIDTH_M1, int>::type = 0>
             rvv_reg_t<T, W> rvvget_lo(rvv_reg_t<T, W * 2> const& vv) noexcept
             {
                 typename rvv_reg_t<T, W>::register_type tmp = rvvget_lo_(T {}, vv);
                 return tmp;
             }
-            template <class T, size_t W, typename std::enable_if<W >= types::detail::rvv_width_m1, int>::type = 0>
+            template <class T, size_t W, typename std::enable_if<W >= XSIMD_RVV_WIDTH_M1, int>::type = 0>
             rvv_reg_t<T, W> rvvget_hi(rvv_reg_t<T, W * 2> const& vv) noexcept
             {
                 typename rvv_reg_t<T, W>::register_type tmp = rvvget_hi_(T {}, vv);
                 return tmp;
             }
-            template <class T, size_t W, typename std::enable_if<W<types::detail::rvv_width_m1, int>::type = 0> rvv_reg_t<T, W> rvvget_lo(rvv_reg_t<T, W * 2> const& vv) noexcept
+            template <class T, size_t W, typename std::enable_if<W<XSIMD_RVV_WIDTH_M1, int>::type = 0> rvv_reg_t<T, W> rvvget_lo(rvv_reg_t<T, W * 2> const& vv) noexcept
             {
                 typename rvv_reg_t<T, W>::register_type tmp = vv;
                 return tmp;
             }
-            template <class T, size_t W, typename std::enable_if<W<types::detail::rvv_width_m1, int>::type = 0> rvv_reg_t<T, W> rvvget_hi(rvv_reg_t<T, W * 2> const& vv) noexcept
+            template <class T, size_t W, typename std::enable_if<W<XSIMD_RVV_WIDTH_M1, int>::type = 0> rvv_reg_t<T, W> rvvget_hi(rvv_reg_t<T, W * 2> const& vv) noexcept
             {
                 return __riscv_vslidedown(vv, vv.vl / 2, vv.vl);
             }
@@ -1019,7 +1019,7 @@ namespace xsimd
                                 (__riscv_vfslide1down), , vec(vec, T))
 
             template <class A, class T>
-            XSIMD_INLINE T reduce_scalar(rvv_reg_t<T, types::detail::rvv_width_m1> const& arg)
+            XSIMD_INLINE T reduce_scalar(rvv_reg_t<T, XSIMD_RVV_WIDTH_M1> const& arg)
             {
                 return detail::rvvmv_lane0(rvv_reg_t<T, A::width>(arg.get_bytes(), types::detail::XSIMD_RVV_BITCAST));
             }
@@ -1028,7 +1028,7 @@ namespace xsimd
         template <class A, class T, class V = typename batch<T, A>::value_type, detail::rvv_enable_all_t<T> = 0>
         XSIMD_INLINE V reduce_add(batch<T, A> const& arg, requires_arch<rvv>) noexcept
         {
-            const auto zero = detail::broadcast<T, types::detail::rvv_width_m1>(T(0));
+            const auto zero = detail::broadcast<T, XSIMD_RVV_WIDTH_M1>(T(0));
             const auto r = detail::rvvredsum(arg, zero);
             return detail::reduce_scalar<A, T>(r);
         }
@@ -1037,7 +1037,7 @@ namespace xsimd
         template <class A, class T, detail::rvv_enable_all_t<T> = 0>
         XSIMD_INLINE T reduce_max(batch<T, A> const& arg, requires_arch<rvv>) noexcept
         {
-            const auto lowest = detail::broadcast<T, types::detail::rvv_width_m1>(std::numeric_limits<T>::lowest());
+            const auto lowest = detail::broadcast<T, XSIMD_RVV_WIDTH_M1>(std::numeric_limits<T>::lowest());
             const auto r = detail::rvvredmax(arg, lowest);
             return detail::reduce_scalar<A, T>(r);
         }
@@ -1046,7 +1046,7 @@ namespace xsimd
         template <class A, class T, detail::rvv_enable_all_t<T> = 0>
         XSIMD_INLINE T reduce_min(batch<T, A> const& arg, requires_arch<rvv>) noexcept
         {
-            const auto max = detail::broadcast<T, types::detail::rvv_width_m1>(std::numeric_limits<T>::max());
+            const auto max = detail::broadcast<T, XSIMD_RVV_WIDTH_M1>(std::numeric_limits<T>::max());
             const auto r = detail::rvvredmin(arg, max);
             return detail::reduce_scalar<A, T>(r);
         }
@@ -1401,27 +1401,27 @@ namespace xsimd
             template <size_t Width>
             XSIMD_INLINE vuint8m1_t rvvslidedownbytes(vuint8m1_t arg, size_t i)
             {
-                return __riscv_vslidedown(arg, i, types::detail::rvv_width_m1 / 8);
+                return __riscv_vslidedown(arg, i, XSIMD_RVV_WIDTH_M1 / 8);
             }
             template <>
-            XSIMD_INLINE vuint8m1_t rvvslidedownbytes<types::detail::rvv_width_mf2>(vuint8m1_t arg, size_t i)
+            XSIMD_INLINE vuint8m1_t rvvslidedownbytes<XSIMD_RVV_WIDTH_MF2>(vuint8m1_t arg, size_t i)
             {
                 const auto bytes = __riscv_vlmul_trunc_u8mf2(arg);
-                const auto result = __riscv_vslidedown(bytes, i, types::detail::rvv_width_mf2 / 8);
+                const auto result = __riscv_vslidedown(bytes, i, XSIMD_RVV_WIDTH_MF2 / 8);
                 return __riscv_vlmul_ext_u8m1(result);
             }
             template <>
-            XSIMD_INLINE vuint8m1_t rvvslidedownbytes<types::detail::rvv_width_mf4>(vuint8m1_t arg, size_t i)
+            XSIMD_INLINE vuint8m1_t rvvslidedownbytes<XSIMD_RVV_WIDTH_MF4>(vuint8m1_t arg, size_t i)
             {
                 const auto bytes = __riscv_vlmul_trunc_u8mf4(arg);
-                const auto result = __riscv_vslidedown(bytes, i, types::detail::rvv_width_mf4 / 8);
+                const auto result = __riscv_vslidedown(bytes, i, XSIMD_RVV_WIDTH_MF4 / 8);
                 return __riscv_vlmul_ext_u8m1(result);
             }
             template <>
-            XSIMD_INLINE vuint8m1_t rvvslidedownbytes<types::detail::rvv_width_mf8>(vuint8m1_t arg, size_t i)
+            XSIMD_INLINE vuint8m1_t rvvslidedownbytes<XSIMD_RVV_WIDTH_MF8>(vuint8m1_t arg, size_t i)
             {
                 const auto bytes = __riscv_vlmul_trunc_u8mf8(arg);
-                const auto result = __riscv_vslidedown(bytes, i, types::detail::rvv_width_mf8 / 8);
+                const auto result = __riscv_vslidedown(bytes, i, XSIMD_RVV_WIDTH_MF8 / 8);
                 return __riscv_vlmul_ext_u8m1(result);
             }
         }
